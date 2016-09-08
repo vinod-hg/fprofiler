@@ -63,7 +63,7 @@ actual_time({suspend, _Cnt, Acc, _Own}) ->
 actual_time({_Func, _Cnt, _Acc, Own}) ->
     trunc(Own * 1000).
 
-get_val({Fun, Count, _,_}) ->
+get_val({Fun, Count, _, _}) ->
     {get_func(Fun), Count, 0};
 get_val({Fun, Count, Time}) ->
     {Fun, Count, Time}.
@@ -78,14 +78,14 @@ get_func(Func) ->
 merge([Head | Data], true) ->
     {NewData, NewMergedFlag} =
         lists:foldl(fun(Entry, {Acc0, MergedFlag}) ->
-    case merge([Entry], Acc0, false) of
-        {_, false} ->
-    {Acc0 ++[Entry], MergedFlag or false};
-        {Acc1, true} ->
-            {Acc1, true}
-    end
+                            case merge([Entry], Acc0, false) of
+                                {_, false} ->
+                                    {Acc0 ++[Entry], MergedFlag or false};
+                                {Acc1, true} ->
+                                    {Acc1, true}
+                            end
                     end, {[Head], false}, Data),
-merge(NewData, NewMergedFlag);
+    merge(NewData, NewMergedFlag);
 merge(Data, false) ->
     Data.
 
@@ -96,7 +96,7 @@ merge([], Data, Match) ->
 merge([{Key, Cnt, Time, Childs}], [{Key, DataCnt, DataTime, DataChilds} | Rest], _) ->
     case merge(Childs, DataChilds, false) of
         {_, false} ->
-    {[{Key, max(Cnt, DataCnt), max(Time, DataTime), DataChilds ++ Childs} | Rest], true};
+            {[{Key, max(Cnt, DataCnt), max(Time, DataTime), DataChilds ++ Childs} | Rest], true};
         {NewData, true} ->
             {[{Key, max(Cnt, DataCnt), max(Time, DataTime), NewData} | Rest], true}
     end;
@@ -104,7 +104,7 @@ merge(Entry, [{Key, DataCnt, DataTime, DataChilds} | Rest], false) ->
     case merge(Entry, DataChilds, false) of
         {_, false} ->
             {NewData, Match} = merge(Entry, Rest, false),
-            {[{Key, DataCnt, DataTime, DataChilds} | NewData], true};
+            {[{Key, DataCnt, DataTime, DataChilds} | NewData], Match};
         {NewData, true} ->
             {[{Key, DataCnt, DataTime, NewData} | Rest], true}
     end;
@@ -128,7 +128,7 @@ log2(FileTo, Parent, {Node, Count, Time, Children}, Map) ->
     end.
 
 write(FileTo, Parent, Node, Count, Time, Children) ->
-    io:format(FileTo, "['~s', ]" ++ get_parent(Parent) ++ ", ~p, ~p, [", [thing_to_list(Node), Count, Time]),
+    io:format(FileTo, "['~s', " ++ get_parent(Parent) ++ ", ~p, ~p, [", [thing_to_list(Node), Count, Time]),
     [io:format(FileTo, "['~s', ~p, ~p],", [thing_to_list(CNode), CCount, CTime]) || {CNode, CCount, CTime, _} <- Children],
     io:format(FileTo, "]],~n", []).
 
@@ -164,11 +164,11 @@ html_begin() ->
   <head>
     <script type =\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>
     <script type =\"text/javascript\">
-      google.charts.load('current', {'package':['treemap']});
-      google.charts.seetOnLoadCallback(drawChart);
+      google.charts.load('current', {'packages':['treemap']});
+      google.charts.setOnLoadCallback(drawChart);
       function drawChart() {
         var tree_data = [
-          ['Function', 'Parent', 'Time Spent (Microseconds)', 'Time inrease/decrease (Color)']];
+          ['Function', 'Parent', 'Time Spent (Microseconds)', 'Time increase/decrease (Color)']];
         var raw_data = [".
 
 html_end() ->
@@ -177,17 +177,17 @@ html_end() ->
     var i = 0;
     var len = raw_data.length;
     for (i = 0; i < len; i++) {
-        tree_data.push([raw_data[i][0], raw_data[i][1], raw_data[i][3], raw_data[i][3]])
+        tree_data.push([raw_data[i][0], raw_data[i][1], raw_data[i][3], raw_data[i][3]]);
     }
     var data = google.visualization.arrayToDataTable(tree_data);
     tree = new google.visualization.TreeMap(document.getElementById('chart_div'));
 
     var options = {
       highlightOnMouseOver: true,
-      maxDept: 1,
-      maxPosDept: 2,
+      maxDepth: 1,
+      maxPosDepth: 2,
       //minHighlightColor: '#8c6bb1',
-      //maxhighlightColor: '#9ebcda',
+      //maxHighlightColor: '#9ebcda',
       //minColor: '#009688',
       //midColor: 'f7f7f7',
       //maxColor: '#ee8100',
@@ -198,13 +198,12 @@ html_end() ->
       generateTooltip: showFullTooltip
     };
     tree.draw(data, options);
-    google.visualization.events.addListener(tree, 'select', onRowSelect');
+    google.visualization.events.addListener(tree, 'select', onRowSelect);
     google.visualization.events.addListener(tree, 'rollup', treeRollup);
     select(0);
 
-    function showFullTooltip(row, siz, value) {
-      return '<div stype=\"bacground:#fd9; padding:10px; border-style:solid\">
-                <span style=\"font-family:Courier\">' +
+    function showFullTooltip(row, size, value) {
+      return '<div style=\"background:#fd9; padding:10px; border-style:solid\"><span style=\"font-family:Courier\">' +
                 data.getColumnLabel(0) + ': ' + '<b>' + data.getValue(row, 0) + '</b><br>' +
                 data.getColumnLabel(2) + ': ' + '<b>' + size + '</b></span></div>';
             //'<br>' + data.getColumnLabel(3) + ':' + value + ' </div>';
@@ -212,15 +211,15 @@ html_end() ->
     function treeRollup(row) {
       onRowSelect();
     }
-    function OnRowSelect() {
+    function onRowSelect() {
       var selection = tree.getSelection();
       select([selection[0].row]);
     }
     function select(row) {
-      var elem = raw_data[raw];
+      var elem = raw_data[row];
       var message =
         '<table style=\"width:100%\"><caption><b>Call Details</b></caption>' + 
-          '<tr><th width=63%>Function</th><th width=12%>Count</th><th width=25%>Time Pent (MilliSeconds)</th></tr>' + 
+          '<tr><th width=63%>Function</th><th width=12%>Count</th><th width=25%>Time spent (MilliSeconds)</th></tr>' + 
           '<tr><td><b>' + elem[0] + '</b></td><td><b>' + elem[2] + '</b></td><td><b>' + elem[3]/1000 + '</b></td></tr>';
         for(var i=0; i <  elem[4].length; i++) {
           message += get_td(elem[4][i][0], elem[4][i][1], elem[4][i][2]/1000);
@@ -230,6 +229,7 @@ html_end() ->
     }
     function get_td(func, count, time) {
         return '<tr><td>' + func + '</td><td>' + count + '</td><td>' + time + '</td></tr>';
+    }
     }
     </script>
     <style>
@@ -247,7 +247,7 @@ html_end() ->
        </style>
     </head>
     <body>
-      <div id=\"data_div\" style=\"float:left; width: 35%; height: auto; min-height: 96%; background:#fd9; padding:1% border-style:solid; \"></div>
+      <div id=\"data_div\" style=\"float:left; width: 35%; height: auto; min-height: 96%; background:#fd9; padding:1%; border-style:solid; \"></div>
       <div id= \"chart_div\" style=\"float:right; width: 61%; height: auto; \"></div>
     </body>
 </html>".
