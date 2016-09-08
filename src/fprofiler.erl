@@ -6,23 +6,29 @@
 -module(fprofiler).
 
 -export([main/1]).
--export([parse/0,
+-export([profile/3,
+         parse/0,
          parse/1]).
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
+-spec main([term()]) -> term().
 main([]) ->
     parse();
-main([M, F, A]) ->
-    {ok, Tracer} = fprof:profile(start),
-    fprof:trace([start, {tracer, Tracer}]),
-    apply(M, F, A),
-    fprof:trace(stop),
-    fprof:analyse(dest, []),
-    parse();
+main([M, F]) ->
+    profile(list_to_atom(M), list_to_atom(F), []);
 main([Name]) ->
     parse(Name).
+
+-spec profile(module(), fun(), [term()]) -> term().
+profile(Mod, Fun, Args) ->
+    {ok, Tracer} = fprof:profile(start),
+    fprof:trace([start, {tracer, Tracer}]),
+    apply(Mod, Fun, Args),
+    fprof:trace(stop),
+    fprof:analyse(dest, []),
+    parse().
 
 parse() ->
     parse("fprof.analysis").
@@ -30,8 +36,7 @@ parse() ->
 parse(FileName) ->
     {ok, Terms} = file:consult(FileName),
     NewTerms = parse_initial(Terms, []),
-    write_html(FileName, NewTerms),
-    NewTerms.
+    write_html(FileName, NewTerms).
 
 
 %% ====================================================================
@@ -153,11 +158,12 @@ thing_to_list(X) when is_tuple(X) -> lists:flatten(io_lib:format("~p", [list_to_
 write_html(FileNameIn, Terms0) ->
     {Terms, _} = aggregate([{total, 1, 0, Terms0}]),
     Output = string:substr(FileNameIn, 1, string:rchr(FileNameIn, $.)) ++ "html",
-{ok, FileTo} = file:open(Output, [write]),
+    {ok, FileTo} = file:open(Output, [write]),
     io:format(FileTo, "~s~n", [html_begin()]),
     log(FileTo, null, Terms, #{}),
     io:format(FileTo, "~s~n", [html_end()]),
-    file:close(FileTo).
+    file:close(FileTo),
+    io:format("Analysis report created; open ~p~n", [Output]).
 
 html_begin() ->
 "<html>
