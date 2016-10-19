@@ -1,5 +1,6 @@
 # fprofiler
 Erlang fprof reporting
+![travis_ci](https://travis-ci.org/vinod-hg/fprofiler.svg?branch=master)
 
 ## Description
 Erlang fprof is a time profiling tool. The output of fprof is very difficult to analyze. fprofiler is a simple tool used to view the fprof output in a graphical chart.
